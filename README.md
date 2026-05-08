@@ -44,6 +44,7 @@ node dist/cli.js install --target pi --mode copy
 ```
 
 Installe les ressources pour une cible. `--target` accepte `pi`, `claude` ou `codex`.
+Par défaut, nAIxus refuse d'écraser une destination existante qui ne correspond pas déjà à la ressource source. Utiliser `--force` pour écraser un conflit.
 
 ### Synchroniser
 
@@ -52,6 +53,7 @@ node dist/cli.js sync --target pi --mode link
 ```
 
 Réapplique l'installation. Utile après modification de `core/` ou `harness/`.
+Comme `install`, `sync` accepte `--force` pour écraser une destination conflictuelle.
 
 ### Vérifier
 

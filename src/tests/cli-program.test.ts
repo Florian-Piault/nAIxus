@@ -16,6 +16,16 @@ describe('createProgram', () => {
     ]);
   });
 
+  it('exposes force only on write commands', () => {
+    const program = createProgram('1.2.3');
+
+    for (const commandName of ['install', 'sync']) {
+      const command = program.commands.find(candidate => candidate.name() === commandName);
+
+      expect(command?.options.map(option => option.long)).toContain('--force');
+    }
+  });
+
   it('keeps target and all selection on doctor and paths', () => {
     const program = createProgram('1.2.3');
 

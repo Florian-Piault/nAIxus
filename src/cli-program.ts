@@ -24,12 +24,14 @@ export function createProgram(version: string): Command {
     .requiredOption('--target <target>', TARGET_OPTION_HELP)
     .option('--mode <mode>', 'copy|link', CLI_DEFAULT_MODE)
     .option('--dry-run', 'print planned writes without changing files')
-    .action(async (opts: { target: string; mode: string; dryRun?: boolean }) => {
+    .option('--force', 'overwrite existing conflicting destinations')
+    .action(async (opts: { target: string; mode: string; dryRun?: boolean; force?: boolean }) => {
       await runAction({
         action: 'install',
         target: assertTarget(opts.target),
         mode: assertMode(opts.mode),
         dryRun: Boolean(opts.dryRun),
+        force: Boolean(opts.force),
       });
     });
 
@@ -39,12 +41,14 @@ export function createProgram(version: string): Command {
     .requiredOption('--target <target>', TARGET_OPTION_HELP)
     .option('--mode <mode>', 'copy|link', CLI_DEFAULT_MODE)
     .option('--dry-run', 'print planned writes without changing files')
-    .action(async (opts: { target: string; mode: string; dryRun?: boolean }) => {
+    .option('--force', 'overwrite existing conflicting destinations')
+    .action(async (opts: { target: string; mode: string; dryRun?: boolean; force?: boolean }) => {
       await runAction({
         action: 'sync',
         target: assertTarget(opts.target),
         mode: assertMode(opts.mode),
         dryRun: Boolean(opts.dryRun),
+        force: Boolean(opts.force),
       });
     });
 

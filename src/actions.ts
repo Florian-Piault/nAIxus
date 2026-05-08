@@ -19,6 +19,7 @@ export type ActionRequest = {
   target: Target;
   mode?: Mode;
   dryRun?: boolean;
+  force?: boolean;
 };
 
 export async function runAction(
@@ -54,6 +55,7 @@ export async function runAction(
     plan.materializationSteps(),
     request.mode ?? DEFAULT_MODE,
     Boolean(request.dryRun),
-    runtime
+    runtime,
+    Boolean(request.force)
   );
 }

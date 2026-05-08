@@ -1,19 +1,86 @@
-import path from "node:path";
-import { nodeRuntime, type Runtime } from "./runtime.js";
-import type { Mode } from "./types.js";
+import path from 'node:path';
+import { nodeRuntime, type Runtime } from './runtime.js';
+import type { Mode } from './types.js';
+
+async function assertNoConflict(
+  source: string,
+  destination: string,
+  force: boolean,
+  runtime: Runtime
+): Promise<void> {
+  if (!(await runtime.pathExists(destination)) || force) return;
+
+  if (await resourcesMatch(source, destination, runtime)) return;
+
+  throw new Error(
+    `Conflict: existing destination not managed or modified: ${destination}. Use --force to overwrite.`
+  );
+}
+
+async function resourcesMatch(
+  source: string,
+  destination: string,
+  runtime: Runtime
+): Promise<boolean> {
+  const sourceStat = await runtime.lstat(source);
+  const destinationStat = await runtime.lstat(destination);
+
+  if (destinationStat.isSymbolicLink()) {
+    const linkTarget = await runtime.readlink(destination);
+    const resolvedTarget = path.resolve(path.dirname(destination), linkTarget);
+    return resolvedTarget === path.resolve(source);
+  }
+
+  if (sourceStat.isSymbolicLink()) return false;
+  if (sourceStat.isDirectory() !== destinationStat.isDirectory()) return false;
+
+  if (!sourceStat.isDirectory()) {
+    const [sourceContent, destinationContent] = await Promise.all([
+      runtime.readFile(source),
+      runtime.readFile(destination)
+    ]);
+    return sourceContent.equals(destinationContent);
+  }
+
+  const [sourceEntries, destinationEntries] = await Promise.all([
+    runtime.readdir(source),
+    runtime.readdir(destination)
+  ]);
+  if (sourceEntries.length !== destinationEntries.length) return false;
+
+  const sortedSourceEntries = [...sourceEntries].sort();
+  const sortedDestinationEntries = [...destinationEntries].sort();
+  for (let index = 0; index < sortedSourceEntries.length; index += 1) {
+    if (sortedSourceEntries[index] !== sortedDestinationEntries[index])
+      return false;
+    if (
+      !(await resourcesMatch(
+        path.join(source, sortedSourceEntries[index]),
+        path.join(destination, sortedDestinationEntries[index]),
+        runtime
+      ))
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 // Crée la ressource cible en copie ou en lien symbolique.
 async function materializeResource(
   step: MaterializationStep,
   mode: Mode,
+  force: boolean,
   runtime: Runtime
 ): Promise<void> {
   const src = step.source;
   const dest = step.destination;
   await runtime.ensureDir(path.dirname(dest));
+  await assertNoConflict(src, dest, force, runtime);
   await runtime.remove(dest);
 
-  if (mode === "copy") {
+  if (mode === 'copy') {
     await runtime.copy(src, dest);
     return;
   }
@@ -21,11 +88,11 @@ async function materializeResource(
   try {
     // Le type du lien dépend de la nature de la source et de la plateforme.
     const stat = await runtime.lstat(src);
-    const type: "file" | "dir" | "junction" = stat.isDirectory()
-      ? process.platform === "win32"
-        ? "junction"
-        : "dir"
-      : "file";
+    const type: 'file' | 'dir' | 'junction' = stat.isDirectory()
+      ? process.platform === 'win32'
+        ? 'junction'
+        : 'dir'
+      : 'file';
     await runtime.symlink(src, dest, type);
   } catch (err) {
     runtime.warn(`link impossible (${String(err)}), fallback copy -> ${dest}`);
@@ -43,13 +110,19 @@ export async function materializePlan(
   steps: MaterializationStep[],
   mode: Mode,
   dryRun = false,
-  runtime: Runtime = nodeRuntime
+  runtime: Runtime = nodeRuntime,
+  force = false
 ): Promise<void> {
   for (const step of steps) {
-    if (dryRun) runtime.log(`dry-run ${mode} ${step.name}: ${step.source} -> ${step.destination}`);
+    if (dryRun)
+      runtime.log(
+        `dry-run ${mode} ${step.name}: ${step.source} -> ${step.destination}`
+      );
     else {
-      await materializeResource(step, mode, runtime);
-      runtime.log(`ok ${mode} ${step.name}: ${step.source} -> ${step.destination}`);
+      await materializeResource(step, mode, force, runtime);
+      runtime.log(
+        `ok ${mode} ${step.name}: ${step.source} -> ${step.destination}`
+      );
     }
   }
 }
