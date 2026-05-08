@@ -20,7 +20,7 @@ describe('materializePlan', () => {
     const destination = path.join(tempDir, 'dest', 'source.txt');
     await fs.writeFile(source, 'hello');
 
-    await materializePlan([{ source, destination }], 'copy');
+    await materializePlan([{ name: 'source', source, destination }], 'copy');
 
     await expect(fs.readFile(destination, 'utf8')).resolves.toBe('hello');
   });
@@ -32,13 +32,13 @@ describe('materializePlan', () => {
     } as Runtime;
 
     await materializePlan(
-      [{ source: '/source.txt', destination: '/dest/source.txt' }],
+      [{ name: 'source', source: '/source.txt', destination: '/dest/source.txt' }],
       'copy',
       true,
       runtime
     );
 
-    expect(messages).toEqual(['dry-run copy: /source.txt -> /dest/source.txt']);
+    expect(messages).toEqual(['dry-run copy source: /source.txt -> /dest/source.txt']);
   });
 
   it('falls back to copy when link fails', async () => {
@@ -58,7 +58,7 @@ describe('materializePlan', () => {
     };
 
     await materializePlan(
-      [{ source: '/source.txt', destination: '/dest/source.txt' }],
+      [{ name: 'source', source: '/source.txt', destination: '/dest/source.txt' }],
       'link',
       false,
       runtime
@@ -70,7 +70,7 @@ describe('materializePlan', () => {
       'symlink',
       'warn link impossible (Error: no link), fallback copy -> /dest/source.txt',
       'copy /source.txt /dest/source.txt',
-      'log ok link: /source.txt -> /dest/source.txt'
+      'log ok link source: /source.txt -> /dest/source.txt'
     ]);
   });
 });

@@ -1,6 +1,7 @@
 import fs from "fs-extra";
 import path from "node:path";
-import { repoRoot, resolveNativeDirs } from "./paths.js";
+import { repoRoot } from "./paths.js";
+import { resolveNativeDirs, resolveTargetResourceRoots } from "./target-catalog.js";
 import type { Target } from "./types.js";
 
 export type PlannedResource = {
@@ -9,59 +10,57 @@ export type PlannedResource = {
   destination: string;
 };
 
-export type InstallationPlan = PlannedResource[];
-
-type ResourceRoot = {
+export type DoctorCheck = {
   name: string;
-  source: string;
-  destination: string;
+  path: string;
 };
 
-function resourceRoots(target: Target): ResourceRoot[] {
-  const dirs = resolveNativeDirs(target);
+export class InstallationPlan {
+  constructor(
+    private readonly target: Target,
+    readonly resources: PlannedResource[]
+  ) {}
 
-  return [
-    {
-      name: "core skills",
-      source: path.join(repoRoot, "core", "skills"),
-      destination: dirs.skills,
-    },
-    {
-      name: "core prompts",
-      source: path.join(repoRoot, "core", "prompts"),
-      destination: dirs.prompts,
-    },
-    {
-      name: "core context",
-      source: path.join(repoRoot, "core", "context"),
-      destination: dirs.context,
-    },
-    {
-      name: "harness config",
-      source: path.join(repoRoot, "harness", target),
-      destination: dirs.config,
-    },
-  ];
+  materializationSteps(): PlannedResource[] {
+    return this.resources;
+  }
+
+  doctorChecks(): DoctorCheck[] {
+    const dirs = resolveNativeDirs(this.target);
+
+    return [
+      ...this.resources.map((resource) => ({
+        name: `${resource.name} source`,
+        path: resource.source,
+      })),
+      ...this.resources.map((resource) => ({
+        name: `${resource.name} destination`,
+        path: resource.destination,
+      })),
+      { name: "target root", path: dirs.root },
+    ];
+  }
 }
 
 export async function createInstallationPlan(target: Target): Promise<InstallationPlan> {
-  const plan: InstallationPlan = [];
+  const resources: PlannedResource[] = [];
 
-  for (const root of resourceRoots(target)) {
-    if (!(await fs.pathExists(root.source))) continue;
+  for (const root of resolveTargetResourceRoots(target)) {
+    const source = path.join(repoRoot, ...root.sourceSegments);
+    if (!(await fs.pathExists(source))) continue;
 
-    const entries = (await fs.readdir(root.source))
+    const entries = (await fs.readdir(source))
       .filter((entry) => entry !== "README.md")
       .sort();
 
     for (const entry of entries) {
-      plan.push({
+      resources.push({
         name: `${root.name}/${entry}`,
-        source: path.join(root.source, entry),
+        source: path.join(source, entry),
         destination: path.join(root.destination, entry),
       });
     }
   }
 
-  return plan;
+  return new InstallationPlan(target, resources);
 }

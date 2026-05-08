@@ -8,7 +8,7 @@ describe('createInstallationPlan', () => {
   it('plans concrete resources and ignores README.md entries', async () => {
     const plan = await createInstallationPlan('pi');
 
-    expect(plan).toEqual([
+    expect(plan.resources).toEqual([
       {
         name: 'core skills/testskill',
         source: path.resolve('core', 'skills', 'testskill'),
@@ -19,10 +19,29 @@ describe('createInstallationPlan', () => {
 
   it('plans target-specific destinations', async () => {
     expect(
-      (await createInstallationPlan('claude')).map(resource => resource.destination)
+      (await createInstallationPlan('claude')).resources.map(resource => resource.destination)
     ).toEqual([path.join(home, '.claude', 'skills', 'testskill')]);
     expect(
-      (await createInstallationPlan('codex')).map(resource => resource.destination)
+      (await createInstallationPlan('codex')).resources.map(resource => resource.destination)
     ).toEqual([path.join(home, '.codex', 'skills', 'testskill')]);
+  });
+
+  it('derives doctor checks from resource intent', async () => {
+    const plan = await createInstallationPlan('pi');
+
+    expect(plan.doctorChecks()).toEqual([
+      {
+        name: 'core skills/testskill source',
+        path: path.resolve('core', 'skills', 'testskill')
+      },
+      {
+        name: 'core skills/testskill destination',
+        path: path.join(home, '.pi', 'agent', 'skills', 'testskill')
+      },
+      {
+        name: 'target root',
+        path: path.join(home, '.pi')
+      }
+    ]);
   });
 });

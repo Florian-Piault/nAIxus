@@ -35,6 +35,7 @@ export async function materialize(
 }
 
 export type MaterializationStep = {
+  name: string;
   source: string;
   destination: string;
 };
@@ -46,10 +47,10 @@ export async function materializePlan(
   runtime: Runtime = nodeRuntime
 ): Promise<void> {
   for (const step of steps) {
-    if (dryRun) runtime.log(`dry-run ${mode}: ${step.source} -> ${step.destination}`);
+    if (dryRun) runtime.log(`dry-run ${mode} ${step.name}: ${step.source} -> ${step.destination}`);
     else {
       await materialize(step.source, step.destination, mode, true, runtime);
-      runtime.log(`ok ${mode}: ${step.source} -> ${step.destination}`);
+      runtime.log(`ok ${mode} ${step.name}: ${step.source} -> ${step.destination}`);
     }
   }
 }

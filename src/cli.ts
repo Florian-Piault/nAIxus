@@ -2,7 +2,7 @@
 import { Command } from 'commander';
 import { createRequire } from 'node:module';
 import { CLI_DEFAULT_MODE, runAction } from './actions.js';
-import { resolveNativeDirs } from './paths.js';
+import { createTargetPathReport } from './target-catalog.js';
 import { runInteractive } from './interactive.js';
 import {
   TARGETS,
@@ -86,10 +86,15 @@ program
   .option('--all', 'print paths for all targets')
   .action((opts: { target?: string; all?: boolean }) => {
     const printPaths = (target: Target) => {
-      const dirs = resolveNativeDirs(target);
+      const report = createTargetPathReport(target);
       console.log(`\n# ${target}`);
-      for (const [name, dir] of Object.entries(dirs)) {
+      console.log('native dirs');
+      for (const [name, dir] of Object.entries(report.nativeDirs)) {
         console.log(`${name}: ${dir}`);
+      }
+      console.log('resource roots');
+      for (const root of report.resourceRoots) {
+        console.log(`${root.name}: ${root.sourceSegments.join('/')} -> ${root.destination}`);
       }
     };
 

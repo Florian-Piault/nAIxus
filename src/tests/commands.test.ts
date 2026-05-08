@@ -1,33 +1,24 @@
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { createDoctorChecks } from '../commands.js';
-import type { InstallationPlan } from '../plan.js';
+import { doctor } from '../commands.js';
+import type { Runtime } from '../runtime.js';
 
 const home = process.env.HOME ?? '';
 
-describe('createDoctorChecks', () => {
-  it('derives source and destination checks from the installation plan', () => {
-    const plan: InstallationPlan = [
-      {
-        name: 'core skills/testskill',
-        source: '/repo/core/skills/testskill',
-        destination: '/home/.pi/agent/skills/testskill'
-      }
-    ];
+describe('doctor', () => {
+  it('checks paths derived from the installation plan', async () => {
+    const messages: string[] = [];
+    const runtime = {
+      pathExists: async () => true,
+      log: (message: string) => messages.push(message)
+    } as Runtime;
 
-    expect(createDoctorChecks('pi', plan)).toEqual([
-      {
-        name: 'core skills/testskill source',
-        path: '/repo/core/skills/testskill'
-      },
-      {
-        name: 'core skills/testskill destination',
-        path: '/home/.pi/agent/skills/testskill'
-      },
-      {
-        name: 'target root',
-        path: path.join(home, '.pi')
-      }
+    await doctor('pi', runtime);
+
+    expect(messages).toEqual([
+      `✅ core skills/testskill source: ${path.resolve('core', 'skills', 'testskill')}`,
+      `✅ core skills/testskill destination: ${path.join(home, '.pi', 'agent', 'skills', 'testskill')}`,
+      `✅ target root: ${path.join(home, '.pi')}`
     ]);
   });
 });
