@@ -5,45 +5,24 @@ import { createInstallationPlan } from '../plan.js';
 const home = process.env.HOME ?? '';
 
 describe('createInstallationPlan', () => {
-  it('plans the shared and harness resources for pi', () => {
-    const plan = createInstallationPlan('pi');
+  it('plans concrete resources and ignores README.md entries', async () => {
+    const plan = await createInstallationPlan('pi');
 
-    expect(plan.map(resource => resource.name)).toEqual([
-      'core skills',
-      'core prompts',
-      'core context',
-      'harness config'
-    ]);
-    expect(plan.map(resource => path.basename(resource.source))).toEqual([
-      'skills',
-      'prompts',
-      'context',
-      'pi'
-    ]);
-    expect(plan.map(resource => resource.destination)).toEqual([
-      path.join(home, '.pi', 'agent', 'skills'),
-      path.join(home, '.pi', 'agent', 'prompts'),
-      path.join(home, '.pi', 'agent'),
-      path.join(home, '.pi', 'agent')
+    expect(plan).toEqual([
+      {
+        name: 'core skills/testskill',
+        source: path.resolve('core', 'skills', 'testskill'),
+        destination: path.join(home, '.pi', 'agent', 'skills', 'testskill')
+      }
     ]);
   });
 
-  it('plans target-specific destinations', () => {
+  it('plans target-specific destinations', async () => {
     expect(
-      createInstallationPlan('claude').map(resource => resource.destination)
-    ).toEqual([
-      path.join(home, '.claude', 'skills'),
-      path.join(home, '.claude', 'commands'),
-      path.join(home, '.claude'),
-      path.join(home, '.claude')
-    ]);
+      (await createInstallationPlan('claude')).map(resource => resource.destination)
+    ).toEqual([path.join(home, '.claude', 'skills', 'testskill')]);
     expect(
-      createInstallationPlan('codex').map(resource => resource.destination)
-    ).toEqual([
-      path.join(home, '.codex', 'skills'),
-      path.join(home, '.codex', 'prompts'),
-      path.join(home, '.codex'),
-      path.join(home, '.codex')
-    ]);
+      (await createInstallationPlan('codex')).map(resource => resource.destination)
+    ).toEqual([path.join(home, '.codex', 'skills', 'testskill')]);
   });
 });

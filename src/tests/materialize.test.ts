@@ -1,35 +1,76 @@
+import fs from 'fs-extra';
+import os from 'node:os';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { planMaterializeChildren } from '../materialize.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { materializePlan } from '../materialize.js';
+import type { Runtime } from '../runtime.js';
 
-describe('planMaterializeChildren', () => {
-  it('ignores README.md entries', () => {
-    const steps = planMaterializeChildren(
-      '/repo/core/skills',
-      '/home/.pi/agent/skills',
-      ['README.md', 'review']
-    );
+let tempDir: string | undefined;
 
-    expect(steps).toEqual([
-      {
-        source: path.join('/repo/core/skills', 'review'),
-        destination: path.join('/home/.pi/agent/skills', 'review')
-      }
-    ]);
+afterEach(async () => {
+  vi.restoreAllMocks();
+  if (tempDir) await fs.remove(tempDir);
+  tempDir = undefined;
+});
+
+describe('materializePlan', () => {
+  it('materializes each planned resource', async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'naixus-'));
+    const source = path.join(tempDir, 'source.txt');
+    const destination = path.join(tempDir, 'dest', 'source.txt');
+    await fs.writeFile(source, 'hello');
+
+    await materializePlan([{ source, destination }], 'copy');
+
+    await expect(fs.readFile(destination, 'utf8')).resolves.toBe('hello');
   });
 
-  it('maps each source entry to the destination directory', () => {
-    const steps = planMaterializeChildren('/src', '/dest', ['a.md', 'folder']);
+  it('prints planned resources without writing in dry-run mode', async () => {
+    const messages: string[] = [];
+    const runtime = {
+      log: (message: string) => messages.push(message)
+    } as Runtime;
 
-    expect(steps).toEqual([
-      {
-        source: path.join('/src', 'a.md'),
-        destination: path.join('/dest', 'a.md')
+    await materializePlan(
+      [{ source: '/source.txt', destination: '/dest/source.txt' }],
+      'copy',
+      true,
+      runtime
+    );
+
+    expect(messages).toEqual(['dry-run copy: /source.txt -> /dest/source.txt']);
+  });
+
+  it('falls back to copy when link fails', async () => {
+    const calls: string[] = [];
+    const runtime: Runtime = {
+      pathExists: async () => true,
+      ensureDir: async path => calls.push(`ensureDir ${path}`),
+      remove: async path => calls.push(`remove ${path}`),
+      copy: async (source, destination) => calls.push(`copy ${source} ${destination}`),
+      lstat: async () => ({ isDirectory: () => false }),
+      symlink: async () => {
+        calls.push('symlink');
+        throw new Error('no link');
       },
-      {
-        source: path.join('/src', 'folder'),
-        destination: path.join('/dest', 'folder')
-      }
+      log: message => calls.push(`log ${message}`),
+      warn: message => calls.push(`warn ${message}`)
+    };
+
+    await materializePlan(
+      [{ source: '/source.txt', destination: '/dest/source.txt' }],
+      'link',
+      false,
+      runtime
+    );
+
+    expect(calls).toEqual([
+      'ensureDir /dest',
+      'remove /dest/source.txt',
+      'symlink',
+      'warn link impossible (Error: no link), fallback copy -> /dest/source.txt',
+      'copy /source.txt /dest/source.txt',
+      'log ok link: /source.txt -> /dest/source.txt'
     ]);
   });
 });

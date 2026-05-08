@@ -1,6 +1,6 @@
 import readline from "node:readline/promises";
-import { doctor, installOrSync } from "./commands.js";
-import { TARGETS, type Mode } from "./types.js";
+import { ACTIONS, DEFAULT_ACTION, DEFAULT_MODE, MODES, runAction } from "./actions.js";
+import { DEFAULT_TARGET, TARGETS, type Mode } from "./types.js";
 
 // Pose une question jusqu'à obtenir une valeur autorisée.
 async function promptChoice<T extends string>(
@@ -29,17 +29,16 @@ export async function runInteractive() {
     const action = await promptChoice(
       rl,
       "Commande",
-      ["install", "sync", "doctor"],
-      "doctor"
+      ACTIONS,
+      DEFAULT_ACTION
     );
-    const target = await promptChoice(rl, "Target", TARGETS, "pi");
+    const target = await promptChoice(rl, "Target", TARGETS, DEFAULT_TARGET);
     const mode: Mode =
       action === "doctor"
         ? "copy"
-        : await promptChoice(rl, "Mode", ["copy", "link"], "copy");
+        : await promptChoice(rl, "Mode", MODES, DEFAULT_MODE);
 
-    if (action === "doctor") await doctor(target);
-    else await installOrSync(target, mode);
+    await runAction({ action, target, mode });
   } finally {
     rl.close();
   }

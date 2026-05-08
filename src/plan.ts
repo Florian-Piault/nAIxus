@@ -1,3 +1,4 @@
+import fs from "fs-extra";
 import path from "node:path";
 import { repoRoot, resolveNativeDirs } from "./paths.js";
 import type { Target } from "./types.js";
@@ -10,7 +11,13 @@ export type PlannedResource = {
 
 export type InstallationPlan = PlannedResource[];
 
-export function createInstallationPlan(target: Target): InstallationPlan {
+type ResourceRoot = {
+  name: string;
+  source: string;
+  destination: string;
+};
+
+function resourceRoots(target: Target): ResourceRoot[] {
   const dirs = resolveNativeDirs(target);
 
   return [
@@ -35,4 +42,26 @@ export function createInstallationPlan(target: Target): InstallationPlan {
       destination: dirs.config,
     },
   ];
+}
+
+export async function createInstallationPlan(target: Target): Promise<InstallationPlan> {
+  const plan: InstallationPlan = [];
+
+  for (const root of resourceRoots(target)) {
+    if (!(await fs.pathExists(root.source))) continue;
+
+    const entries = (await fs.readdir(root.source))
+      .filter((entry) => entry !== "README.md")
+      .sort();
+
+    for (const entry of entries) {
+      plan.push({
+        name: `${root.name}/${entry}`,
+        source: path.join(root.source, entry),
+        destination: path.join(root.destination, entry),
+      });
+    }
+  }
+
+  return plan;
 }

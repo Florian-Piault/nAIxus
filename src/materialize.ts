@@ -1,5 +1,5 @@
-import fs from "fs-extra";
 import path from "node:path";
+import { nodeRuntime, type Runtime } from "./runtime.js";
 import type { Mode } from "./types.js";
 
 // Crée la ressource cible en copie ou en lien symbolique.
@@ -7,29 +7,30 @@ export async function materialize(
   src: string,
   dest: string,
   mode: Mode,
-  fallbackToCopy = true
+  fallbackToCopy = true,
+  runtime: Runtime = nodeRuntime
 ): Promise<void> {
-  await fs.ensureDir(path.dirname(dest));
-  await fs.remove(dest);
+  await runtime.ensureDir(path.dirname(dest));
+  await runtime.remove(dest);
 
   if (mode === "copy") {
-    await fs.copy(src, dest, { overwrite: true });
+    await runtime.copy(src, dest);
     return;
   }
 
   try {
     // Le type du lien dépend de la nature de la source et de la plateforme.
-    const stat = await fs.lstat(src);
+    const stat = await runtime.lstat(src);
     const type: "file" | "dir" | "junction" = stat.isDirectory()
       ? process.platform === "win32"
         ? "junction"
         : "dir"
       : "file";
-    await fs.symlink(src, dest, type);
+    await runtime.symlink(src, dest, type);
   } catch (err) {
     if (!fallbackToCopy) throw err;
-    console.warn(`link impossible (${String(err)}), fallback copy -> ${dest}`);
-    await fs.copy(src, dest, { overwrite: true });
+    runtime.warn(`link impossible (${String(err)}), fallback copy -> ${dest}`);
+    await runtime.copy(src, dest);
   }
 }
 
@@ -38,46 +39,17 @@ export type MaterializationStep = {
   destination: string;
 };
 
-export function planMaterializeChildren(
-  srcDir: string,
-  destDir: string,
-  entries: string[]
-): MaterializationStep[] {
-  // Les README internes documentent les sources mais ne sont pas installés.
-  return entries
-    .filter((entry) => entry !== "README.md")
-    .map((entry) => ({
-      source: path.join(srcDir, entry),
-      destination: path.join(destDir, entry),
-    }));
-}
-
-// Matérialise chaque entrée d'un dossier source vers le dossier cible.
-export async function materializeChildren(
-  srcDir: string,
-  destDir: string,
+export async function materializePlan(
+  steps: MaterializationStep[],
   mode: Mode,
-  dryRun = false
+  dryRun = false,
+  runtime: Runtime = nodeRuntime
 ): Promise<void> {
-  if (!(await fs.pathExists(srcDir))) {
-    console.warn(`skip (absent): ${srcDir}`);
-    return;
-  }
-
-  const steps = planMaterializeChildren(srcDir, destDir, await fs.readdir(srcDir));
-  if (steps.length === 0) {
-    if (!dryRun) {
-      await fs.ensureDir(destDir);
-      console.log(`ok mkdir: ${destDir}`);
-    }
-    return;
-  }
-
   for (const step of steps) {
-    if (dryRun) console.log(`dry-run ${mode}: ${step.source} -> ${step.destination}`);
+    if (dryRun) runtime.log(`dry-run ${mode}: ${step.source} -> ${step.destination}`);
     else {
-      await materialize(step.source, step.destination, mode, true);
-      console.log(`ok ${mode}: ${step.source} -> ${step.destination}`);
+      await materialize(step.source, step.destination, mode, true, runtime);
+      runtime.log(`ok ${mode}: ${step.source} -> ${step.destination}`);
     }
   }
 }

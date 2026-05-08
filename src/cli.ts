@@ -1,10 +1,16 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import { createRequire } from 'node:module';
-import { doctor, installOrSync } from './commands.js';
+import { CLI_DEFAULT_MODE, runAction } from './actions.js';
 import { resolveNativeDirs } from './paths.js';
 import { runInteractive } from './interactive.js';
-import { TARGETS, assertMode, assertTarget } from './types.js';
+import {
+  TARGETS,
+  TARGET_OPTION_HELP,
+  assertMode,
+  assertTarget,
+  type Target,
+} from './types.js';
 
 const program = new Command();
 const require = createRequire(import.meta.url);
@@ -21,44 +27,49 @@ program
 program
   .command('install')
   .description('Install the harness setup to the target')
-  .requiredOption('--target <target>', 'pi|claude|codex')
-  .option('--mode <mode>', 'copy|link', 'link')
+  .requiredOption('--target <target>', TARGET_OPTION_HELP)
+  .option('--mode <mode>', 'copy|link', CLI_DEFAULT_MODE)
   .option('--dry-run', 'print planned writes without changing files')
   .action(async (opts: { target: string; mode: string; dryRun?: boolean }) => {
-    const target = assertTarget(opts.target);
-    const mode = assertMode(opts.mode);
-    await installOrSync(target, mode, Boolean(opts.dryRun));
+    await runAction({
+      action: 'install',
+      target: assertTarget(opts.target),
+      mode: assertMode(opts.mode),
+      dryRun: Boolean(opts.dryRun),
+    });
   });
 
 program
   .command('sync')
   .description('Sync the harness setup to the target')
-  .requiredOption('--target <target>', 'pi|claude|codex')
-  .option('--mode <mode>', 'copy|link', 'link')
+  .requiredOption('--target <target>', TARGET_OPTION_HELP)
+  .option('--mode <mode>', 'copy|link', CLI_DEFAULT_MODE)
   .option('--dry-run', 'print planned writes without changing files')
   .action(async (opts: { target: string; mode: string; dryRun?: boolean }) => {
-    const target = assertTarget(opts.target);
-    const mode = assertMode(opts.mode);
-    await installOrSync(target, mode, Boolean(opts.dryRun));
+    await runAction({
+      action: 'sync',
+      target: assertTarget(opts.target),
+      mode: assertMode(opts.mode),
+      dryRun: Boolean(opts.dryRun),
+    });
   });
 
 program
   .command('doctor')
   .description('Check the harness setup on the target')
-  .option('--target <target>', 'pi|claude|codex')
+  .option('--target <target>', TARGET_OPTION_HELP)
   .option('--all', 'check all targets')
   .action(async (opts: { target?: string; all?: boolean }) => {
     if (opts.all) {
       for (const target of TARGETS) {
         console.log(`\n# ${target}`);
-        await doctor(target);
+        await runAction({ action: 'doctor', target });
       }
       return;
     }
 
     if (!opts.target) throw new Error('Option requise: --target <target> ou --all');
-    const target = assertTarget(opts.target);
-    await doctor(target);
+    await runAction({ action: 'doctor', target: assertTarget(opts.target) });
   });
 
 program
@@ -71,10 +82,10 @@ program
 program
   .command('paths')
   .description('Print resolved native paths for a target')
-  .option('--target <target>', 'pi|claude|codex')
+  .option('--target <target>', TARGET_OPTION_HELP)
   .option('--all', 'print paths for all targets')
   .action((opts: { target?: string; all?: boolean }) => {
-    const printPaths = (target: (typeof TARGETS)[number]) => {
+    const printPaths = (target: Target) => {
       const dirs = resolveNativeDirs(target);
       console.log(`\n# ${target}`);
       for (const [name, dir] of Object.entries(dirs)) {
