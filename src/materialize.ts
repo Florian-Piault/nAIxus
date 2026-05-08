@@ -33,6 +33,25 @@ export async function materialize(
   }
 }
 
+export type MaterializationStep = {
+  source: string;
+  destination: string;
+};
+
+export function planMaterializeChildren(
+  srcDir: string,
+  destDir: string,
+  entries: string[]
+): MaterializationStep[] {
+  // Les README internes documentent les sources mais ne sont pas installés.
+  return entries
+    .filter((entry) => entry !== "README.md")
+    .map((entry) => ({
+      source: path.join(srcDir, entry),
+      destination: path.join(destDir, entry),
+    }));
+}
+
 // Matérialise chaque entrée d'un dossier source vers le dossier cible.
 export async function materializeChildren(
   srcDir: string,
@@ -45,9 +64,8 @@ export async function materializeChildren(
     return;
   }
 
-  // Les README internes documentent les sources mais ne sont pas installés.
-  const entries = (await fs.readdir(srcDir)).filter((entry) => entry !== "README.md");
-  if (entries.length === 0) {
+  const steps = planMaterializeChildren(srcDir, destDir, await fs.readdir(srcDir));
+  if (steps.length === 0) {
     if (!dryRun) {
       await fs.ensureDir(destDir);
       console.log(`ok mkdir: ${destDir}`);
@@ -55,13 +73,11 @@ export async function materializeChildren(
     return;
   }
 
-  for (const entry of entries) {
-    const src = path.join(srcDir, entry);
-    const dest = path.join(destDir, entry);
-    if (dryRun) console.log(`dry-run ${mode}: ${src} -> ${dest}`);
+  for (const step of steps) {
+    if (dryRun) console.log(`dry-run ${mode}: ${step.source} -> ${step.destination}`);
     else {
-      await materialize(src, dest, mode, true);
-      console.log(`ok ${mode}: ${src} -> ${dest}`);
+      await materialize(step.source, step.destination, mode, true);
+      console.log(`ok ${mode}: ${step.source} -> ${step.destination}`);
     }
   }
 }
