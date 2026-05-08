@@ -1,8 +1,9 @@
-import { doctor, installOrSync } from "./commands.js";
+import { materializePlan } from "./materialize.js";
+import { createInstallationPlan, createTargetPathReport } from "./plan.js";
 import { nodeRuntime, type Runtime } from "./runtime.js";
 import type { Action, Mode, Target } from "./types.js";
 
-export const ACTIONS = ["install", "sync", "doctor"] as const satisfies readonly Action[];
+export const ACTIONS = ["install", "sync", "doctor", "paths"] as const satisfies readonly Action[];
 export const DEFAULT_ACTION: Action = "doctor";
 export const MODES = ["copy", "link"] as const;
 export const DEFAULT_MODE: Mode = "copy";
@@ -19,13 +20,31 @@ export async function runAction(
   request: ActionRequest,
   runtime: Runtime = nodeRuntime
 ): Promise<void> {
+  const plan = await createInstallationPlan(request.target);
+
   if (request.action === "doctor") {
-    await doctor(request.target, runtime);
+    for (const check of plan.doctorChecks()) {
+      const exists = await runtime.pathExists(check.path);
+      runtime.log(`${exists ? "✅" : "❌"} ${check.name}: ${check.path}`);
+    }
     return;
   }
 
-  await installOrSync(
-    request.target,
+  if (request.action === "paths") {
+    const report = await createTargetPathReport(request.target);
+    runtime.log('native dirs');
+    for (const [name, dir] of Object.entries(report.nativeDirs)) {
+      runtime.log(`${name}: ${dir}`);
+    }
+    runtime.log('resource roots');
+    for (const root of report.resourceRoots) {
+      runtime.log(`${root.name}: ${root.sourceSegments.join('/')} -> ${root.destination}`);
+    }
+    return;
+  }
+
+  await materializePlan(
+    plan.materializationSteps(),
     request.mode ?? DEFAULT_MODE,
     Boolean(request.dryRun),
     runtime

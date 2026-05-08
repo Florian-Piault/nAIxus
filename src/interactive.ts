@@ -34,7 +34,7 @@ export async function runInteractive() {
     );
     const target = await promptChoice(rl, "Target", TARGETS, DEFAULT_TARGET);
     const mode: Mode =
-      action === "doctor"
+      action === "doctor" || action === "paths"
         ? "copy"
         : await promptChoice(rl, "Mode", MODES, DEFAULT_MODE);
 

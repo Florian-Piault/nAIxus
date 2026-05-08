@@ -34,4 +34,17 @@ describe('runAction', () => {
 
     expect(messages.at(-1)).toBe(`✅ target root: ${path.join(process.env.HOME ?? '', '.pi')}`);
   });
+
+  it('runs paths through the shared action seam', async () => {
+    const messages: string[] = [];
+    const runtime = {
+      log: (message: string) => messages.push(message)
+    } as Runtime;
+
+    await runAction({ action: 'paths', target: 'pi' }, runtime);
+
+    expect(messages).toContain('native dirs');
+    expect(messages).toContain(`skills: ${path.join(process.env.HOME ?? '', '.pi', 'agent', 'skills')}`);
+    expect(messages).toContain('resource roots');
+  });
 });

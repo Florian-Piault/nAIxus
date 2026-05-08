@@ -3,13 +3,13 @@ import { nodeRuntime, type Runtime } from "./runtime.js";
 import type { Mode } from "./types.js";
 
 // Crée la ressource cible en copie ou en lien symbolique.
-export async function materialize(
-  src: string,
-  dest: string,
+async function materializeResource(
+  step: MaterializationStep,
   mode: Mode,
-  fallbackToCopy = true,
-  runtime: Runtime = nodeRuntime
+  runtime: Runtime
 ): Promise<void> {
+  const src = step.source;
+  const dest = step.destination;
   await runtime.ensureDir(path.dirname(dest));
   await runtime.remove(dest);
 
@@ -28,7 +28,6 @@ export async function materialize(
       : "file";
     await runtime.symlink(src, dest, type);
   } catch (err) {
-    if (!fallbackToCopy) throw err;
     runtime.warn(`link impossible (${String(err)}), fallback copy -> ${dest}`);
     await runtime.copy(src, dest);
   }
@@ -49,7 +48,7 @@ export async function materializePlan(
   for (const step of steps) {
     if (dryRun) runtime.log(`dry-run ${mode} ${step.name}: ${step.source} -> ${step.destination}`);
     else {
-      await materialize(step.source, step.destination, mode, true, runtime);
+      await materializeResource(step, mode, runtime);
       runtime.log(`ok ${mode} ${step.name}: ${step.source} -> ${step.destination}`);
     }
   }

@@ -4,9 +4,7 @@ import {
   DEFAULT_TARGET,
   TARGET_OPTION_HELP,
   TARGETS,
-  createTargetPathReport,
   resolveNativeDirs,
-  resolveTargetResourceRoots,
 } from '../target-catalog.js';
 
 const home = process.env.HOME ?? '';
@@ -28,37 +26,5 @@ describe('target catalog', () => {
     });
     expect(resolveNativeDirs('claude').prompts).toBe(path.join(home, '.claude', 'commands'));
     expect(resolveNativeDirs('codex').prompts).toBe(path.join(home, '.codex', 'prompts'));
-  });
-
-  it('resolves resource roots for each target', () => {
-    expect(resolveTargetResourceRoots('claude')).toEqual([
-      {
-        name: 'core skills',
-        sourceSegments: ['core', 'skills'],
-        destination: path.join(home, '.claude', 'skills')
-      },
-      {
-        name: 'core prompts',
-        sourceSegments: ['core', 'prompts'],
-        destination: path.join(home, '.claude', 'commands')
-      },
-      {
-        name: 'core context',
-        sourceSegments: ['core', 'context'],
-        destination: path.join(home, '.claude')
-      },
-      {
-        name: 'harness config',
-        sourceSegments: ['harness', 'claude'],
-        destination: path.join(home, '.claude')
-      }
-    ]);
-  });
-
-  it('creates path reports from native dirs and resource roots', () => {
-    expect(createTargetPathReport('codex')).toEqual({
-      nativeDirs: resolveNativeDirs('codex'),
-      resourceRoots: resolveTargetResourceRoots('codex')
-    });
   });
 });

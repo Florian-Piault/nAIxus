@@ -15,17 +15,6 @@ export type NativeDirs = {
   context: string;
 };
 
-export type TargetResourceRoot = {
-  name: string;
-  sourceSegments: string[];
-  destination: string;
-};
-
-export type TargetPathReport = {
-  nativeDirs: NativeDirs;
-  resourceRoots: TargetResourceRoot[];
-};
-
 export function assertTarget(value: string): Target {
   // Valide les entrées utilisateur avant d'écrire dans les dossiers locaux.
   if ((TARGETS as readonly string[]).includes(value)) return value as Target;
@@ -75,38 +64,4 @@ export function resolveNativeDirs(target: Target): NativeDirs {
         context: root
       };
   }
-}
-
-export function resolveTargetResourceRoots(target: Target): TargetResourceRoot[] {
-  const dirs = resolveNativeDirs(target);
-
-  return [
-    {
-      name: 'core skills',
-      sourceSegments: ['core', 'skills'],
-      destination: dirs.skills,
-    },
-    {
-      name: 'core prompts',
-      sourceSegments: ['core', 'prompts'],
-      destination: dirs.prompts,
-    },
-    {
-      name: 'core context',
-      sourceSegments: ['core', 'context'],
-      destination: dirs.context,
-    },
-    {
-      name: 'harness config',
-      sourceSegments: ['harness', target],
-      destination: dirs.config,
-    },
-  ];
-}
-
-export function createTargetPathReport(target: Target): TargetPathReport {
-  return {
-    nativeDirs: resolveNativeDirs(target),
-    resourceRoots: resolveTargetResourceRoots(target),
-  };
 }

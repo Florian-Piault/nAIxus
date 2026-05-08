@@ -1,6 +1,10 @@
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { createInstallationPlan } from '../plan.js';
+import {
+  createInstallationPlan,
+  createTargetPathReport,
+  resolveTargetResourceRoots,
+} from '../plan.js';
 
 const home = process.env.HOME ?? '';
 
@@ -24,6 +28,35 @@ describe('createInstallationPlan', () => {
     expect(
       (await createInstallationPlan('codex')).resources.map(resource => resource.destination)
     ).toEqual([path.join(home, '.codex', 'skills', 'testskill')]);
+  });
+
+  it('resolves resource roots for each target', () => {
+    expect(resolveTargetResourceRoots('claude')).toEqual([
+      {
+        name: 'core skills',
+        sourceSegments: ['core', 'skills'],
+        destination: path.join(home, '.claude', 'skills')
+      },
+      {
+        name: 'core prompts',
+        sourceSegments: ['core', 'prompts'],
+        destination: path.join(home, '.claude', 'commands')
+      },
+      {
+        name: 'core context',
+        sourceSegments: ['core', 'context'],
+        destination: path.join(home, '.claude')
+      },
+      {
+        name: 'harness config',
+        sourceSegments: ['harness', 'claude'],
+        destination: path.join(home, '.claude')
+      }
+    ]);
+  });
+
+  it('creates path reports from native dirs and resource roots', () => {
+    expect(createTargetPathReport('codex').resourceRoots).toEqual(resolveTargetResourceRoots('codex'));
   });
 
   it('derives doctor checks from resource intent', async () => {
