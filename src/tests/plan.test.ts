@@ -14,9 +14,14 @@ describe('createInstallationPlan', () => {
 
     expect(plan.resources).toEqual([
       {
-        name: 'core skills/testskill',
-        source: path.resolve('core', 'skills', 'testskill'),
-        destination: path.join(home, '.pi', 'agent', 'skills', 'testskill')
+        name: 'core skills/brainstorm',
+        source: path.resolve('core', 'skills', 'brainstorm'),
+        destination: path.join(home, '.pi', 'agent', 'skills', 'brainstorm')
+      },
+      {
+        name: 'core skills/code-review',
+        source: path.resolve('core', 'skills', 'code-review'),
+        destination: path.join(home, '.pi', 'agent', 'skills', 'code-review')
       }
     ]);
   });
@@ -24,10 +29,16 @@ describe('createInstallationPlan', () => {
   it('plans target-specific destinations', async () => {
     expect(
       (await createInstallationPlan('claude')).resources.map(resource => resource.destination)
-    ).toEqual([path.join(home, '.claude', 'skills', 'testskill')]);
+    ).toEqual([
+      path.join(home, '.claude', 'skills', 'brainstorm'),
+      path.join(home, '.claude', 'skills', 'code-review')
+    ]);
     expect(
       (await createInstallationPlan('codex')).resources.map(resource => resource.destination)
-    ).toEqual([path.join(home, '.codex', 'skills', 'testskill')]);
+    ).toEqual([
+      path.join(home, '.codex', 'skills', 'brainstorm'),
+      path.join(home, '.codex', 'skills', 'code-review')
+    ]);
   });
 
   it('resolves resource roots for each target', () => {
@@ -64,12 +75,20 @@ describe('createInstallationPlan', () => {
 
     expect(plan.doctorChecks()).toEqual([
       {
-        name: 'core skills/testskill source',
-        path: path.resolve('core', 'skills', 'testskill')
+        name: 'core skills/brainstorm source',
+        path: path.resolve('core', 'skills', 'brainstorm')
       },
       {
-        name: 'core skills/testskill destination',
-        path: path.join(home, '.pi', 'agent', 'skills', 'testskill')
+        name: 'core skills/code-review source',
+        path: path.resolve('core', 'skills', 'code-review')
+      },
+      {
+        name: 'core skills/brainstorm destination',
+        path: path.join(home, '.pi', 'agent', 'skills', 'brainstorm')
+      },
+      {
+        name: 'core skills/code-review destination',
+        path: path.join(home, '.pi', 'agent', 'skills', 'code-review')
       },
       {
         name: 'target root',

@@ -13,12 +13,19 @@ describe('runAction', () => {
     await runAction({ action: 'install', target: 'pi', mode: 'copy', dryRun: true }, runtime);
 
     expect(messages).toEqual([
-      `dry-run copy core skills/testskill: ${path.resolve('core', 'skills', 'testskill')} -> ${path.join(
+      `dry-run copy core skills/brainstorm: ${path.resolve('core', 'skills', 'brainstorm')} -> ${path.join(
         process.env.HOME ?? '',
         '.pi',
         'agent',
         'skills',
-        'testskill'
+        'brainstorm'
+      )}`,
+      `dry-run copy core skills/code-review: ${path.resolve('core', 'skills', 'code-review')} -> ${path.join(
+        process.env.HOME ?? '',
+        '.pi',
+        'agent',
+        'skills',
+        'code-review'
       )}`
     ]);
   });
