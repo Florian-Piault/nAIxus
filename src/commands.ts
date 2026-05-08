@@ -4,14 +4,14 @@ import { materializeChildren } from "./materialize.js";
 import { repoRoot, resolveNativeDirs } from "./paths.js";
 import type { Mode, Target } from "./types.js";
 
-export async function installOrSync(target: Target, mode: Mode) {
+export async function installOrSync(target: Target, mode: Mode, dryRun = false) {
   const dirs = resolveNativeDirs(target);
 
   // Le même flux sert à installer et à resynchroniser les ressources partagées.
-  await materializeChildren(path.join(repoRoot, "core", "skills"), dirs.skills, mode);
-  await materializeChildren(path.join(repoRoot, "core", "prompts"), dirs.prompts, mode);
-  await materializeChildren(path.join(repoRoot, "core", "context"), dirs.context, mode);
-  await materializeChildren(path.join(repoRoot, "harness", target), dirs.config, mode);
+  await materializeChildren(path.join(repoRoot, "core", "skills"), dirs.skills, mode, dryRun);
+  await materializeChildren(path.join(repoRoot, "core", "prompts"), dirs.prompts, mode, dryRun);
+  await materializeChildren(path.join(repoRoot, "core", "context"), dirs.context, mode, dryRun);
+  await materializeChildren(path.join(repoRoot, "harness", target), dirs.config, mode, dryRun);
 }
 
 export async function doctor(target: Target) {

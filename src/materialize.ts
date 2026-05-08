@@ -37,7 +37,8 @@ export async function materialize(
 export async function materializeChildren(
   srcDir: string,
   destDir: string,
-  mode: Mode
+  mode: Mode,
+  dryRun = false
 ): Promise<void> {
   if (!(await fs.pathExists(srcDir))) {
     console.warn(`skip (absent): ${srcDir}`);
@@ -47,15 +48,20 @@ export async function materializeChildren(
   // Les README internes documentent les sources mais ne sont pas installés.
   const entries = (await fs.readdir(srcDir)).filter((entry) => entry !== "README.md");
   if (entries.length === 0) {
-    await fs.ensureDir(destDir);
-    console.log(`ok mkdir: ${destDir}`);
+    if (!dryRun) {
+      await fs.ensureDir(destDir);
+      console.log(`ok mkdir: ${destDir}`);
+    }
     return;
   }
 
   for (const entry of entries) {
     const src = path.join(srcDir, entry);
     const dest = path.join(destDir, entry);
-    await materialize(src, dest, mode, true);
-    console.log(`ok ${mode}: ${src} -> ${dest}`);
+    if (dryRun) console.log(`dry-run ${mode}: ${src} -> ${dest}`);
+    else {
+      await materialize(src, dest, mode, true);
+      console.log(`ok ${mode}: ${src} -> ${dest}`);
+    }
   }
 }
