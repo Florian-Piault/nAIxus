@@ -55,13 +55,21 @@ node dist/cli.js sync --target pi --mode link
 Réapplique l'installation. Utile après modification de `core/` ou `harness/`.
 Comme `install`, `sync` accepte `--force` pour écraser une destination conflictuelle.
 
+### Désinstaller
+
+```bash
+node dist/cli.js uninstall --target pi
+```
+
+Supprime uniquement les ressources gérées listées dans le manifeste de la cible. Les ressources modifiées depuis l'installation sont ignorées pour éviter de supprimer du contenu utilisateur.
+
 ### Vérifier
 
 ```bash
 node dist/cli.js doctor --target pi
 ```
 
-Affiche les chemins attendus et indique s'ils existent.
+Affiche les chemins attendus, l'état du manifeste et indique si les ressources gérées existent encore ou ont été modifiées.
 
 ## Modes
 

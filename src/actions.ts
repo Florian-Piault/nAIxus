@@ -1,4 +1,15 @@
 import { materializePlan } from './materialize.js';
+import {
+  fingerprintResource,
+  fingerprintsEqual,
+  readInstallationManifest,
+  removeInstallationManifest,
+  resolveManifestPath,
+  saveInstallationManifest,
+  writeInstallationManifest,
+  type ManifestEntry,
+} from './manifest.js';
+import path from 'node:path';
 import { createInstallationPlan, createTargetPathReport } from './plan.js';
 import { nodeRuntime, type Runtime } from './runtime.js';
 import type { Action, Mode, Target } from './types.js';
@@ -7,7 +18,8 @@ export const ACTIONS = [
   'install',
   'sync',
   'doctor',
-  'paths'
+  'paths',
+  'uninstall'
 ] as const satisfies readonly Action[];
 export const DEFAULT_ACTION: Action = 'doctor';
 export const MODES = ['copy', 'link'] as const;
@@ -33,6 +45,66 @@ export async function runAction(
       const exists = await runtime.pathExists(check.path);
       runtime.log(`${exists ? '✅' : '❌'} ${check.name}: ${check.path}`);
     }
+
+    const manifest = await readInstallationManifest(request.target);
+    runtime.log(`manifest: ${resolveManifestPath(request.target)}`);
+    if (!manifest) {
+      runtime.log('manifest status: missing');
+    } else {
+      runtime.log(`manifest status: ${manifest.entries.length} managed resources`);
+      for (const entry of manifest.entries) {
+        const currentFingerprint = await fingerprintResource(entry.destination);
+        const status = fingerprintsEqual(currentFingerprint, entry.fingerprint)
+          ? 'managed'
+          : currentFingerprint
+            ? 'modified'
+            : 'missing';
+        runtime.log(`${status === 'managed' ? '✅' : '❌'} ${entry.name}: ${status}`);
+      }
+    }
+    return;
+  }
+
+  if (request.action === 'uninstall') {
+    const manifest = await readInstallationManifest(request.target);
+    if (!manifest) {
+      runtime.log(`manifest missing: ${resolveManifestPath(request.target)}`);
+      return;
+    }
+
+    const skippedEntries: ManifestEntry[] = [];
+
+    for (const entry of manifest.entries) {
+      if (!isInsideTargetRoot(entry.destination, request.target)) {
+        runtime.warn(`skip unsafe destination ${entry.name}: ${entry.destination}`);
+        skippedEntries.push(entry);
+        continue;
+      }
+
+      const currentFingerprint = await fingerprintResource(entry.destination);
+      if (!fingerprintsEqual(currentFingerprint, entry.fingerprint)) {
+        runtime.warn(`skip modified or missing ${entry.name}: ${entry.destination}`);
+        skippedEntries.push(entry);
+        continue;
+      }
+
+      if (request.dryRun) runtime.log(`dry-run remove ${entry.name}: ${entry.destination}`);
+      else {
+        await runtime.remove(entry.destination);
+        runtime.log(`removed ${entry.name}: ${entry.destination}`);
+      }
+    }
+
+    if (request.dryRun) runtime.log(`dry-run update manifest: ${resolveManifestPath(request.target)}`);
+    else if (skippedEntries.length > 0) {
+      await saveInstallationManifest({
+        ...manifest,
+        installedAt: new Date().toISOString(),
+        entries: skippedEntries,
+      });
+    } else {
+      await removeInstallationManifest(request.target);
+    }
     return;
   }
 
@@ -51,11 +123,28 @@ export async function runAction(
     return;
   }
 
+  const steps = plan.materializationSteps();
   await materializePlan(
-    plan.materializationSteps(),
+    steps,
     request.mode ?? DEFAULT_MODE,
     Boolean(request.dryRun),
     runtime,
     Boolean(request.force)
   );
+
+  if (!request.dryRun) {
+    await writeInstallationManifest(
+      request.target,
+      steps.map(step => ({
+        ...step,
+        mode: request.mode ?? DEFAULT_MODE,
+      }))
+    );
+  }
+}
+
+function isInsideTargetRoot(destination: string, target: Target): boolean {
+  const targetRoot = path.dirname(resolveManifestPath(target));
+  const relativeDestination = path.relative(targetRoot, destination);
+  return Boolean(relativeDestination) && !relativeDestination.startsWith('..') && !path.isAbsolute(relativeDestination);
 }

@@ -53,6 +53,23 @@ export function createProgram(version: string): Command {
     });
 
   program
+    .command('uninstall')
+    .description('Remove managed resources from the target manifest')
+    .option('--target <target>', TARGET_OPTION_HELP)
+    .option('--all', 'remove managed resources from all targets')
+    .option('--dry-run', 'print planned removals without changing files')
+    .action(async (opts: { target?: string; all?: boolean; dryRun?: boolean }) => {
+      for (const target of resolveTargetSelection(opts)) {
+        console.log(`\n# ${target}`);
+        await runAction({
+          action: 'uninstall',
+          target,
+          dryRun: Boolean(opts.dryRun),
+        });
+      }
+    });
+
+  program
     .command('doctor')
     .description('Check the harness setup on the target')
     .option('--target <target>', TARGET_OPTION_HELP)

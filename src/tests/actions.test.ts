@@ -32,7 +32,8 @@ describe('runAction', () => {
 
     await runAction({ action: 'doctor', target: 'pi' }, runtime);
 
-    expect(messages.at(-1)).toBe(`✅ target root: ${path.join(process.env.HOME ?? '', '.pi')}`);
+    expect(messages).toContain(`✅ target root: ${path.join(process.env.HOME ?? '', '.pi')}`);
+    expect(messages).toContain(`manifest: ${path.join(process.env.HOME ?? '', '.pi', '.naixus-manifest.json')}`);
   });
 
   it('runs paths through the shared action seam', async () => {

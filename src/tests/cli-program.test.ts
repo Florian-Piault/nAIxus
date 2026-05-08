@@ -10,6 +10,7 @@ describe('createProgram', () => {
     expect(program.commands.map(command => command.name())).toEqual([
       'install',
       'sync',
+      'uninstall',
       'doctor',
       'targets',
       'paths'
@@ -26,13 +27,13 @@ describe('createProgram', () => {
     }
   });
 
-  it('keeps target and all selection on doctor and paths', () => {
+  it('keeps target and all selection on multi-target commands', () => {
     const program = createProgram('1.2.3');
 
-    for (const commandName of ['doctor', 'paths']) {
+    for (const commandName of ['uninstall', 'doctor', 'paths']) {
       const command = program.commands.find(candidate => candidate.name() === commandName);
 
-      expect(command?.options.map(option => option.long)).toEqual(['--target', '--all']);
+      expect(command?.options.map(option => option.long).slice(0, 2)).toEqual(['--target', '--all']);
     }
   });
 });
