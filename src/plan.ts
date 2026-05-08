@@ -1,7 +1,7 @@
 import fs from "fs-extra";
 import path from "node:path";
 import { repoRoot } from "./paths.js";
-import { resolveNativeDirs, type NativeDirs } from "./target-catalog.js";
+import { resolveHarnessLayout, type HarnessLayout } from "./target-catalog.js";
 import type { Target } from "./types.js";
 
 export type PlannedResource = {
@@ -22,7 +22,7 @@ export type TargetResourceRoot = {
 };
 
 export type TargetPathReport = {
-  nativeDirs: NativeDirs;
+  harnessLayout: HarnessLayout;
   resourceRoots: TargetResourceRoot[];
 };
 
@@ -37,7 +37,7 @@ export class InstallationPlan {
   }
 
   doctorChecks(): DoctorCheck[] {
-    const dirs = resolveNativeDirs(this.target);
+    const layout = resolveHarnessLayout(this.target);
 
     return [
       ...this.resources.map((resource) => ({
@@ -48,41 +48,41 @@ export class InstallationPlan {
         name: `${resource.name} destination`,
         path: resource.destination,
       })),
-      { name: "target root", path: dirs.root },
+      { name: "target root", path: layout.root },
     ];
   }
 }
 
 export function resolveTargetResourceRoots(target: Target): TargetResourceRoot[] {
-  const dirs = resolveNativeDirs(target);
+  const layout = resolveHarnessLayout(target);
 
   return [
     {
       name: "core skills",
       sourceSegments: ["core", "skills"],
-      destination: dirs.skills,
+      destination: layout.skills,
     },
     {
       name: "core prompts",
       sourceSegments: ["core", "prompts"],
-      destination: dirs.prompts,
+      destination: layout.prompts,
     },
     {
       name: "core context",
       sourceSegments: ["core", "context"],
-      destination: dirs.context,
+      destination: layout.context,
     },
     {
       name: "harness config",
       sourceSegments: ["harness", target],
-      destination: dirs.config,
+      destination: layout.config,
     },
   ];
 }
 
 export function createTargetPathReport(target: Target): TargetPathReport {
   return {
-    nativeDirs: resolveNativeDirs(target),
+    harnessLayout: resolveHarnessLayout(target),
     resourceRoots: resolveTargetResourceRoots(target),
   };
 }

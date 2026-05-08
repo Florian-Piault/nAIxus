@@ -1,13 +1,7 @@
 import os from 'node:os';
 import path from 'node:path';
 
-export const TARGETS = ['pi', 'claude', 'codex'] as const;
-export const TARGET_OPTION_HELP = TARGETS.join('|');
-export const DEFAULT_TARGET: Target = 'pi';
-
-export type Target = (typeof TARGETS)[number];
-
-export type NativeDirs = {
+export type HarnessLayout = {
   root: string;
   config: string;
   skills: string;
@@ -15,53 +9,71 @@ export type NativeDirs = {
   context: string;
 };
 
-export function assertTarget(value: string): Target {
-  // Valide les entrées utilisateur avant d'écrire dans les dossiers locaux.
-  if ((TARGETS as readonly string[]).includes(value)) return value as Target;
-  throw new Error(`Target invalide: ${value}. Options: ${TARGETS.join(', ')}`);
-}
+type TargetDefinition = {
+  layout: (home: string) => HarnessLayout;
+};
 
-export function resolveTargetRoot(target: Target): string {
-  const home = os.homedir();
+const TARGET_CATALOG = {
+  pi: {
+    layout: (home: string) => {
+      const root = path.join(home, '.pi');
+      const agent = path.join(root, 'agent');
 
-  switch (target) {
-    case 'pi':
-      return path.join(home, '.pi');
-    case 'claude':
-      return path.join(home, '.claude');
-    case 'codex':
-      return path.join(home, '.codex');
-  }
-}
-
-export function resolveNativeDirs(target: Target): NativeDirs {
-  const root = resolveTargetRoot(target);
-  // Chaque harness expose des dossiers natifs différents pour skills/prompts/context.
-
-  switch (target) {
-    case 'pi':
       return {
         root,
-        config: path.join(root, 'agent'),
-        skills: path.join(root, 'agent', 'skills'),
-        prompts: path.join(root, 'agent', 'prompts'),
-        context: path.join(root, 'agent')
+        config: agent,
+        skills: path.join(agent, 'skills'),
+        prompts: path.join(agent, 'prompts'),
+        context: agent,
       };
-    case 'claude':
+    },
+  },
+  claude: {
+    layout: (home: string) => {
+      const root = path.join(home, '.claude');
+
       return {
         root,
         config: root,
         skills: path.join(root, 'skills'),
         prompts: path.join(root, 'commands'),
-        context: root
+        context: root,
       };
-    case 'codex':
+    },
+  },
+  codex: {
+    layout: (home: string) => {
+      const root = path.join(home, '.codex');
+
       return {
         root,
         config: root,
         skills: path.join(root, 'skills'),
         prompts: path.join(root, 'prompts'),
-        context: root
+        context: root,
       };
-  }
+    },
+  },
+} as const satisfies Record<string, TargetDefinition>;
+
+export type Target = keyof typeof TARGET_CATALOG;
+export const TARGETS = Object.keys(TARGET_CATALOG) as Target[];
+export const TARGET_OPTION_HELP = TARGETS.join('|');
+export const DEFAULT_TARGET: Target = 'pi';
+
+export function assertTarget(value: string): Target {
+  // Valide les entrées utilisateur avant d'écrire dans les dossiers locaux.
+  if (value in TARGET_CATALOG) return value as Target;
+  throw new Error(`Target invalide: ${value}. Options: ${TARGETS.join(', ')}`);
 }
+
+export function resolveTargetRoot(target: Target): string {
+  return resolveHarnessLayout(target).root;
+}
+
+export function resolveHarnessLayout(target: Target): HarnessLayout {
+  return TARGET_CATALOG[target].layout(os.homedir());
+}
+
+export const resolveNativeDirs = resolveHarnessLayout;
+export type NativeDirs = HarnessLayout;

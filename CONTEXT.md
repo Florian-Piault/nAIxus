@@ -16,6 +16,10 @@ _Avoid_: platform, provider
 A file or directory from `core/` or `harness/` that nAIxus installs into a target's native folders.
 _Avoid_: asset, artifact
 
+**Harness Layout**:
+The native folders exposed by a **Harness** for installed resources and configuration.
+_Avoid_: native dirs, directory map
+
 **Installation Plan**:
 The ordered set of source-to-destination resource operations for a target.
 _Avoid_: mapping, manifest
@@ -23,6 +27,7 @@ _Avoid_: mapping, manifest
 ## Relationships
 
 - A **Target** identifies exactly one **Harness**.
+- A **Harness** has exactly one **Harness Layout**.
 - An **Installation Plan** contains zero or more **Resources**.
 - A **Resource** has one repository source and one native destination for a given **Target**.
 
@@ -30,6 +35,9 @@ _Avoid_: mapping, manifest
 
 > **Dev:** "When we add a new **Resource**, should `doctor` know about it?"
 > **Domain expert:** "Yes — both install and doctor should derive from the same **Installation Plan** for the selected **Target**."
+>
+> **Dev:** "When we add a new **Harness**, where do its native folders live?"
+> **Domain expert:** "In its **Harness Layout**; the **Installation Plan** only consumes that layout."
 
 ## Flagged ambiguities
 

@@ -43,7 +43,7 @@ describe('runAction', () => {
 
     await runAction({ action: 'paths', target: 'pi' }, runtime);
 
-    expect(messages).toContain('native dirs');
+    expect(messages).toContain('harness layout');
     expect(messages).toContain(`skills: ${path.join(process.env.HOME ?? '', '.pi', 'agent', 'skills')}`);
     expect(messages).toContain('resource roots');
   });
