@@ -36,7 +36,12 @@ pnpm dlx naixus install --target pi
 npx naixus install --target pi
 ```
 
-Depuis une source Git compatible, il peut aussi être exécuté avec `pnpm dlx <source-git>` ; le script `prepare` build alors `dist/` avant l'exécution.
+Depuis GitHub, il peut aussi être exécuté sans build local grâce au dossier `dist/` versionné :
+
+```bash
+pnpm dlx github:Florian-Piault/nAIxus install --target pi
+pnpm dlx https://github.com/Florian-Piault/nAIxus.git install --target pi
+```
 
 ## Commandes
 

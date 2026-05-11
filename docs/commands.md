@@ -28,7 +28,12 @@ Exemple :
 pnpm dlx naixus install --target pi
 ```
 
-Depuis une source Git compatible, `pnpm dlx <source-git>` peut aussi être utilisé. Le script `prepare` lance le build avant l'exécution.
+Depuis GitHub, le CLI peut aussi être exécuté sans build local grâce au dossier `dist/` versionné :
+
+```bash
+pnpm dlx github:Florian-Piault/nAIxus <commande>
+pnpm dlx https://github.com/Florian-Piault/nAIxus.git <commande>
+```
 
 ## Mode interactif
 
