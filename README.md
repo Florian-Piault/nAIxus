@@ -39,6 +39,7 @@ npx naixus install --target pi
 Depuis GitHub, il peut aussi être exécuté sans build local grâce au dossier `dist/` versionné :
 
 ```bash
+pnpm dlx github:Florian-Piault/nAIxus
 pnpm dlx github:Florian-Piault/nAIxus install --target pi
 pnpm dlx https://github.com/Florian-Piault/nAIxus.git install --target pi
 ```
