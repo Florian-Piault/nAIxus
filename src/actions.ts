@@ -10,7 +10,7 @@ import {
   type ManifestEntry,
 } from './manifest.js';
 import path from 'node:path';
-import { createInstallationPlan, createTargetPathReport } from './plan.js';
+import { createInstallationPlan, createTargetPathReport, listTargetResources } from './plan.js';
 import { nodeRuntime, type Runtime } from './runtime.js';
 import type { Action, Mode, Target } from './types.js';
 
@@ -32,13 +32,22 @@ export type ActionRequest = {
   mode?: Mode;
   dryRun?: boolean;
   force?: boolean;
+  include?: string[];
+  exclude?: string[];
+};
+
+export type ResourceListRequest = {
+  target: Target;
+  json?: boolean;
+  verbose?: boolean;
 };
 
 export async function runAction(
   request: ActionRequest,
   runtime: Runtime = nodeRuntime
 ): Promise<void> {
-  const plan = await createInstallationPlan(request.target);
+  const selectedResourceIds = await resolveSelectedResourceIds(request);
+  const plan = await createInstallationPlan(request.target, selectedResourceIds);
 
   if (request.action === 'doctor') {
     for (const check of plan.doctorChecks()) {
@@ -138,9 +147,65 @@ export async function runAction(
       steps.map(step => ({
         ...step,
         mode: request.mode ?? DEFAULT_MODE,
-      }))
+      })),
+      selectedResourceIds
     );
   }
+}
+
+export async function listResources(
+  request: ResourceListRequest,
+  runtime: Runtime = nodeRuntime
+): Promise<void> {
+  const resources = await listTargetResources(request.target);
+  const manifest = await readInstallationManifest(request.target);
+  const selected = manifest?.selectedResources ? new Set(manifest.selectedResources) : undefined;
+  const installed = new Set(manifest?.entries.map((entry) => entry.id).filter(Boolean));
+
+  if (request.json) {
+    runtime.log(JSON.stringify(resources.map((resource) => ({
+      id: resource.id,
+      name: resource.name,
+      source: resource.source,
+      destination: resource.destination,
+      selected: selected ? selected.has(resource.id) : undefined,
+      installed: installed.has(resource.id),
+    })), null, 2));
+    return;
+  }
+
+  for (const resource of resources) {
+    if (request.verbose) {
+      const status = selected
+        ? selected.has(resource.id) ? 'selected' : 'not selected'
+        : installed.has(resource.id) ? 'installed' : 'available';
+      runtime.log(`${resource.id} (${status})`);
+      runtime.log(`  ${resource.source} -> ${resource.destination}`);
+    } else {
+      runtime.log(`${resource.id} - ${resource.name}`);
+    }
+  }
+}
+
+async function resolveSelectedResourceIds(request: ActionRequest): Promise<string[] | undefined> {
+  if (request.action === 'sync' && !request.include?.length && !request.exclude?.length) {
+    const manifest = await readInstallationManifest(request.target);
+    if (manifest?.selectedResources) return manifest.selectedResources;
+  }
+
+  if (!request.include?.length && !request.exclude?.length) return undefined;
+
+  const resources = await listTargetResources(request.target);
+  const availableIds = new Set(resources.map((resource) => resource.id));
+  const requestedIds = [...(request.include ?? []), ...(request.exclude ?? [])];
+  const unknownIds = requestedIds.filter((id) => !availableIds.has(id));
+  if (unknownIds.length > 0) {
+    throw new Error(`Unknown resource id(s): ${unknownIds.join(', ')}`);
+  }
+
+  const selected = new Set(request.include?.length ? request.include : resources.map((resource) => resource.id));
+  for (const id of request.exclude ?? []) selected.delete(id);
+  return [...selected].sort();
 }
 
 function isInsideTargetRoot(destination: string, target: Target): boolean {

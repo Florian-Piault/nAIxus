@@ -14,14 +14,22 @@ describe('createInstallationPlan', () => {
 
     expect(plan.resources).toEqual([
       {
+        id: 'core/skills/brainstorm',
         name: 'core skills/brainstorm',
         source: path.resolve('core', 'skills', 'brainstorm'),
         destination: path.join(home, '.pi', 'agent', 'skills', 'brainstorm')
       },
       {
+        id: 'core/skills/code-review',
         name: 'core skills/code-review',
         source: path.resolve('core', 'skills', 'code-review'),
         destination: path.join(home, '.pi', 'agent', 'skills', 'code-review')
+      },
+      {
+        id: 'core/skills/commit',
+        name: 'core skills/commit',
+        source: path.resolve('core', 'skills', 'commit'),
+        destination: path.join(home, '.pi', 'agent', 'skills', 'commit')
       }
     ]);
   });
@@ -31,13 +39,15 @@ describe('createInstallationPlan', () => {
       (await createInstallationPlan('claude')).resources.map(resource => resource.destination)
     ).toEqual([
       path.join(home, '.claude', 'skills', 'brainstorm'),
-      path.join(home, '.claude', 'skills', 'code-review')
+      path.join(home, '.claude', 'skills', 'code-review'),
+      path.join(home, '.claude', 'skills', 'commit')
     ]);
     expect(
       (await createInstallationPlan('codex')).resources.map(resource => resource.destination)
     ).toEqual([
       path.join(home, '.codex', 'skills', 'brainstorm'),
-      path.join(home, '.codex', 'skills', 'code-review')
+      path.join(home, '.codex', 'skills', 'code-review'),
+      path.join(home, '.codex', 'skills', 'commit')
     ]);
   });
 
@@ -83,12 +93,20 @@ describe('createInstallationPlan', () => {
         path: path.resolve('core', 'skills', 'code-review')
       },
       {
+        name: 'core skills/commit source',
+        path: path.resolve('core', 'skills', 'commit')
+      },
+      {
         name: 'core skills/brainstorm destination',
         path: path.join(home, '.pi', 'agent', 'skills', 'brainstorm')
       },
       {
         name: 'core skills/code-review destination',
         path: path.join(home, '.pi', 'agent', 'skills', 'code-review')
+      },
+      {
+        name: 'core skills/commit destination',
+        path: path.join(home, '.pi', 'agent', 'skills', 'commit')
       },
       {
         name: 'target root',

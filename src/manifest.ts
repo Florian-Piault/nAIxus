@@ -11,6 +11,7 @@ export type ResourceFingerprint = {
 };
 
 export type ManifestEntry = {
+  id?: string;
   name: string;
   source: string;
   destination: string;
@@ -22,6 +23,7 @@ export type InstallationManifest = {
   version: 1;
   target: Target;
   installedAt: string;
+  selectedResources?: string[];
   entries: ManifestEntry[];
 };
 
@@ -56,7 +58,8 @@ export function fingerprintsEqual(
 
 export async function writeInstallationManifest(
   target: Target,
-  entries: Omit<ManifestEntry, 'fingerprint'>[]
+  entries: Omit<ManifestEntry, 'fingerprint'>[],
+  selectedResources?: readonly string[]
 ): Promise<void> {
   const manifestEntries: ManifestEntry[] = [];
 
@@ -70,6 +73,7 @@ export async function writeInstallationManifest(
     version: 1,
     target,
     installedAt: new Date().toISOString(),
+    selectedResources: selectedResources ? [...selectedResources].sort() : undefined,
     entries: manifestEntries,
   };
 

@@ -26,6 +26,13 @@ describe('runAction', () => {
         'agent',
         'skills',
         'code-review'
+      )}`,
+      `dry-run copy core skills/commit: ${path.resolve('core', 'skills', 'commit')} -> ${path.join(
+        process.env.HOME ?? '',
+        '.pi',
+        'agent',
+        'skills',
+        'commit'
       )}`
     ]);
   });

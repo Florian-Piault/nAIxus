@@ -12,6 +12,7 @@ describe('createProgram', () => {
       'sync',
       'uninstall',
       'doctor',
+      'list-resources',
       'targets',
       'paths'
     ]);
@@ -24,6 +25,8 @@ describe('createProgram', () => {
       const command = program.commands.find(candidate => candidate.name() === commandName);
 
       expect(command?.options.map(option => option.long)).toContain('--force');
+      expect(command?.options.map(option => option.long)).toContain('--include');
+      expect(command?.options.map(option => option.long)).toContain('--exclude');
     }
   });
 

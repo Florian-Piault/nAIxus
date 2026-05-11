@@ -29,13 +29,15 @@ pnpm run dev
 
 ## Commandes
 
+La documentation complète des commandes est dans [`docs/commands.md`](docs/commands.md).
+
 ### Mode interactif
 
 ```bash
 pnpm run start
 ```
 
-Lance un assistant qui demande la commande, la cible et le mode si nécessaire.
+Lance un assistant qui demande la commande, la cible et le mode si nécessaire. Pour `install` et `sync`, l'assistant permet aussi de choisir les ressources à installer.
 
 ### Installer
 
@@ -46,6 +48,21 @@ node dist/cli.js install --target pi --mode copy
 Installe les ressources pour une cible. `--target` accepte `pi`, `claude` ou `codex`.
 Par défaut, nAIxus refuse d'écraser une destination existante qui ne correspond pas déjà à la ressource source. Utiliser `--force` pour écraser un conflit.
 
+Pour installer une sélection précise :
+
+```bash
+node dist/cli.js install --target pi --include core/skills/code-review
+node dist/cli.js install --target pi --exclude core/skills/commit
+```
+
+### Lister les ressources sélectionnables
+
+```bash
+node dist/cli.js list-resources --target pi
+```
+
+Affiche les IDs utilisables avec `--include` et `--exclude`. Ajouter `--verbose` pour les chemins et statuts, ou `--json` pour les scripts.
+
 ### Synchroniser
 
 ```bash
@@ -53,7 +70,7 @@ node dist/cli.js sync --target pi --mode link
 ```
 
 Réapplique l'installation. Utile après modification de `core/` ou `harness/`.
-Comme `install`, `sync` accepte `--force` pour écraser une destination conflictuelle.
+Comme `install`, `sync` accepte `--force`, `--include` et `--exclude`. Si une sélection a été enregistrée dans le manifeste, `sync` la réutilise par défaut.
 
 ### Désinstaller
 
