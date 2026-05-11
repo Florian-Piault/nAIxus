@@ -13,6 +13,23 @@ En développement, vous pouvez aussi utiliser :
 pnpm run dev -- <commande>
 ```
 
+## Utilisation sans installation locale
+
+Le package expose le binaire `naixus`. Une fois publié, il peut être exécuté sans installation globale :
+
+```bash
+pnpm dlx naixus <commande>
+npx naixus <commande>
+```
+
+Exemple :
+
+```bash
+pnpm dlx naixus install --target pi
+```
+
+Depuis une source Git compatible, `pnpm dlx <source-git>` peut aussi être utilisé. Le script `prepare` lance le build avant l'exécution.
+
 ## Mode interactif
 
 ```bash

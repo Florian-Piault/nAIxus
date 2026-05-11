@@ -1,12 +1,24 @@
 {
   "name": "naixus",
-  "version": "0.8.0",
-  "private": true,
+  "version": "0.9.0",
   "type": "module",
+  "bin": {
+    "naixus": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "core",
+    "harness",
+    "docs",
+    "README.md",
+    "CONTEXT.md",
+    "AGENTS.md"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
+    "prepare": "npm run build",
     "test": "vitest run"
   },
   "dependencies": {
