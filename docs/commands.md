@@ -41,6 +41,11 @@ pnpm dlx https://github.com/Florian-Piault/nAIxus.git <commande>
 node dist/cli.js
 ```
 
+```bash
+pnpm dlx github:Florian-Piault/nAIxus
+npx github:Florian-Piault/nAIxus
+```
+
 Lance un assistant qui demande la commande, la cible, le mode si nécessaire, puis propose une sélection des ressources pour `install` et `sync`.
 
 ## `install`
